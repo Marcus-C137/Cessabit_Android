@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "409251244248",
+    "firebase_url": "https://zagermonitoringfb.firebaseio.com",
+    "project_id": "zagermonitoringfb",
+    "storage_bucket": "zagermonitoringfb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:409251244248:android:6d7fb529517bb5c8",
+        "android_client_info": {
+          "package_name": "xyz.zagermonitoring.nodmcu_setup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "409251244248-2isnvjqq93nne98vo1rrhlrn50h2fbrn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "xyz.zagermonitoring.nodmcu_setup",
+            "certificate_hash": "748bed8b09815d71bbdfcdee83100d75e491a6df"
+          }
+        },
+        {
+          "client_id": "409251244248-0onfpqvuhljn5er8jhc1obql32jvdc64.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBOOyM_5PT9gDGa2lrc6C8NAHw4hAPM84M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "409251244248-0onfpqvuhljn5er8jhc1obql32jvdc64.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

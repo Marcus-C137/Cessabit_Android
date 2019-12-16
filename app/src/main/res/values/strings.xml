@@ -1,0 +1,18 @@
+<resources>
+    <string name="app_name">NodMCU_setUP</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="subscription_intro">
+        You\'re currently not subscribed. In order to see and set temperatures over the web, allow for
+        email, phone , and text alerts, and have server monitoring, a subscription is required to cover the cost of
+        third party software vendors.
+    </string>
+    <string name="ok_subscribed">
+        You are subscribed! Reset your Cessabit device to allow data transferring. Alerts can be set up through the app, and
+        monitoring is now configured.
+    </string>
+    <string name="unsubscribe">
+        <U>Unsubscribe</U>
+    </string>
+</resources>
