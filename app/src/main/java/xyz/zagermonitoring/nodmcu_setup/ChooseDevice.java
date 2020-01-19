@@ -193,7 +193,7 @@ public class ChooseDevice extends AppCompatActivity implements EnterWifiDialog.E
 
     @Override
     public void applyTexts(String WIFI_password) {
-
+        //skeet skeet bang bang
         String url = "http://192.168.4.1/postWiFiPassword";
         final String Wifi_password = WIFI_password;
 
