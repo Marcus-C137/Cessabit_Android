@@ -1,4 +1,4 @@
-package xyz.zagermonitoring.nodmcu_setup.Service;
+package xyz.zagermonitoring.nodmcu_setup.service;
 
 import android.app.Notification;
 import android.app.NotificationChannel;

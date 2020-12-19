@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/nav_device"
+    app:startDestination="@id/deviceHomeFragment">
+
+    <fragment
+        android:id="@+id/port1Fragment"
+        android:name="xyz.zagermonitoring.nodmcu_setup.Port1Fragment"
+        android:label="fragment_port1"
+        tools:layout="@layout/fragment_port1" />
+    <fragment
+        android:id="@+id/port2Fragment"
+        android:name="xyz.zagermonitoring.nodmcu_setup.Port2Fragment"
+        android:label="fragment_port2"
+        tools:layout="@layout/fragment_port2" />
+    <fragment
+        android:id="@+id/port3Fragment"
+        android:name="xyz.zagermonitoring.nodmcu_setup.Port3Fragment"
+        android:label="fragment_port3"
+        tools:layout="@layout/fragment_port3" />
+    <fragment
+        android:id="@+id/port4Fragment"
+        android:name="xyz.zagermonitoring.nodmcu_setup.Port4Fragment"
+        android:label="fragment_port4"
+        tools:layout="@layout/fragment_port4" />
+    <fragment
+        android:id="@+id/deviceHomeFragment"
+        android:name="xyz.zagermonitoring.nodmcu_setup.DeviceHomeFragment"
+        android:label="fragment_device_home"
+        tools:layout="@layout/fragment_device_home" />
+
+</navigation>

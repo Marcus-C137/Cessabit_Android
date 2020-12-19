@@ -49,8 +49,6 @@ public class SubscriptionFragment extends Fragment{
                 }
             }
         });
-
-
         return view;
     }
 

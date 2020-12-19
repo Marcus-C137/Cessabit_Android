@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/port1BottomNav"
+        android:title="Port1"
+        android:icon="@drawable/ic_looks_one_black_24dp"
+        android:enabled="true" />
+
+    <item
+        android:id="@+id/port2BottomNav"
+        android:title="Port2"
+        android:icon="@drawable/ic_looks_two_black_24dp"
+        android:enabled="true"/>
+
+    <item
+        android:id="@+id/deviceHomeBottomNav"
+        android:title="Home"
+        android:icon="@drawable/ic_home_black_24dp"
+        android:checked="true"
+        android:enabled="true" />
+
+    <item
+        android:id="@+id/port3BottomNav"
+        android:title="Port3"
+        android:icon="@drawable/ic_looks_3_black_24dp"
+        android:enabled="true" />
+
+    <item
+        android:id="@+id/port4BottomNav"
+        android:title="Port4"
+        android:icon="@drawable/ic_looks_4_black_24dp"
+        android:enabled="true" />
+
+</menu>

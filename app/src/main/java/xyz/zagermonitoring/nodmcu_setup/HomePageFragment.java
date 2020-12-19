@@ -15,6 +15,9 @@ import androidx.core.content.ContextCompat;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentActivity;
+import androidx.fragment.app.FragmentContainerView;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
@@ -33,6 +36,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.gms.dynamic.SupportFragmentWrapper;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
@@ -61,7 +65,10 @@ public class HomePageFragment extends Fragment implements View.OnClickListener {
 
     private static final String TAG = "HomePage";
     private int LOCATION_PERMISSION_CODE=99;
+    private boolean activeSubscription;
     private NavController navController;
+    private NavHostFragment navHostFragment;
+    private FragmentManager supportFragmentManager;
     private String UID;
     private FirebaseAuth mAuth;
     private FirebaseUser user;
@@ -70,13 +77,11 @@ public class HomePageFragment extends Fragment implements View.OnClickListener {
     private ImageButton setupBtn;
     private ArrayAdapter adapter;
     private ArrayList<String> arrayList = new ArrayList<>();
+    private ArrayList<String> deviceUIDList = new ArrayList<>();
     private View view;
     private Context context;
-    private boolean activeSubscription;
-    FirebaseFirestore db = FirebaseFirestore.getInstance();
-
-
     private OnFragmentInteractionListener mListener;
+    FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     public HomePageFragment() {
         // Required empty public constructor
@@ -93,38 +98,30 @@ public class HomePageFragment extends Fragment implements View.OnClickListener {
         }
     }
 
-
-
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         view = inflater.inflate(R.layout.fragment_home_page, container, false);
         devicelistView = view.findViewById(R.id.deviceListView);
         txtView_noDevices = view.findViewById(R.id.txtView_noDevices);
         setupBtn = view.findViewById(R.id.setupBtn);
         txtView_noDevices.setVisibility(View.INVISIBLE);
-
         adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, arrayList);
         devicelistView.setAdapter(adapter);
-
         devicelistView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if(activeSubscription){
-                    String Device = devicelistView.getItemAtPosition(position).toString();
-                    goToDevicePage(Device);
+                    Log.d(TAG, "POSITION " + position);
+
+                    goToDevicePage(deviceUIDList.get(position));
                 }else{
                     navController.navigate(R.id.subscriptionFragment);
                 }
             }
         });
-
         setupBtn.setOnClickListener(this);
         populateDeviceList();
-
-
-
-        // Inflate the layout for this fragment
+        // Inflate the layout for this fragmentnav_device_container
         return view;
     }
 
@@ -137,7 +134,8 @@ public class HomePageFragment extends Fragment implements View.OnClickListener {
         user = FirebaseAuth.getInstance().getCurrentUser();
         UID = user.getUid();
         Log.d("UID", UID);
-        navController = Navigation.findNavController(getActivity(), R.id.nav_host_fragment);
+        navHostFragment = (NavHostFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
+        NavController navController = navHostFragment.getNavController();
 
         FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
             @Override
@@ -196,7 +194,15 @@ public class HomePageFragment extends Fragment implements View.OnClickListener {
                      }
                      arrayList.clear();
                      for (QueryDocumentSnapshot document : snapshots) {
-                         arrayList.add(document.getId());
+                         deviceUIDList.add(document.getId());
+                         Log.d(TAG, "deviceUIDList" + deviceUIDList.toString());
+                         String deviceName = "Error";
+                         try{
+                            deviceName = document.get("nickName").toString();
+                         }catch (Exception ex){
+                            Log.e(TAG, ex.getMessage());
+                         }
+                         arrayList.add(deviceName);
                          adapter.notifyDataSetChanged();
                      }
                      if (arrayList.size() == 0) {

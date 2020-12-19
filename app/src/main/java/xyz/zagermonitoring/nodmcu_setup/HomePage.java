@@ -5,9 +5,11 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
 import androidx.navigation.NavController;
 import androidx.navigation.NavOptions;
 import androidx.navigation.Navigation;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
 import android.content.Intent;
@@ -52,8 +54,9 @@ import java.util.Map;
 public class HomePage extends AppCompatActivity implements PurchasesUpdatedListener, SubscriptionFragment.OnFragmentInteractionListener, NavigationView.OnNavigationItemSelectedListener {
 
     private static final String TAG = "HomePageActivity";
-
-
+    static final String SKU_MONTHLY_SUBSCRIPTION="subscription_test";
+    private FragmentManager supportFragmentManager;
+    private NavHostFragment navHostFragment;
     public DrawerLayout drawerLayout;
     public NavigationView navigationView;
     public NavController navController;
@@ -61,9 +64,8 @@ public class HomePage extends AppCompatActivity implements PurchasesUpdatedListe
     private FirebaseAuth mAuth;
     private FirebaseUser user;
     private Boolean activeSubscription = false;
-    int billingResponseCode;
     private SubscriptionFragment subscriptionFragment;
-    static final String SKU_MONTHLY_SUBSCRIPTION="subscription_test";
+    int billingResponseCode;
     BillingClient billingClient;
     SkuDetailsParams.Builder params;
     List<SkuDetails>SkuDetailsList;
@@ -72,25 +74,24 @@ public class HomePage extends AppCompatActivity implements PurchasesUpdatedListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home_page);
         subscriptionFragment = new SubscriptionFragment();
+        setContentView(R.layout.activity_home_page);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         navOpen = findViewById(R.id.navOpen);
         mAuth=FirebaseAuth.getInstance();
         user = mAuth.getCurrentUser();
         Log.d(TAG, user.getUid());
-
         navOpen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 drawerLayout.openDrawer(GravityCompat.START);
             }
         });
-        navController = Navigation.findNavController(this, R.id.nav_host_fragment);
+        navHostFragment = (NavHostFragment) this.getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
+        NavController navController = navHostFragment.getNavController();
         NavigationUI.setupWithNavController(navigationView, navController);
         navigationView.setNavigationItemSelectedListener(this);
-
         String base64EncodedPublicKey="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn7z1SCLXRKTgCn9U" +
                 "d99wE0N8D73LACJjUl+/2z58bfwvrqveMvdmfO7k5IOp2BghlywMAE8zDpGdbISreVyI8CRcuE/Eyn7ojz" +
                 "6YRlUVzgINP+aAwtYdeRGcxbT0oeTQzQuF6gFO6DuQM2TG14/Eg6NyqQWB+WcV+y4Gw9K+FIQtmYQTTBz7" +
@@ -155,10 +156,8 @@ public class HomePage extends AppCompatActivity implements PurchasesUpdatedListe
                                 public void onSkuDetailsResponse(BillingResult billingResult, List<SkuDetails> skuDetailsList) {
                                     SkuDetailsList = skuDetailsList;
                                     Log.d("!!!!!!!!!11", "+ " + SkuDetailsList);
-
                                 }
                             });
-
                 }
             }
             @Override
@@ -211,13 +210,11 @@ public class HomePage extends AppCompatActivity implements PurchasesUpdatedListe
             case R.id.nav_Alerts:{
                 navController.navigate(R.id.alertFragment);
                 break;
-
             }
             case R.id.nav_log_out:{
                 mAuth.signOut();
                 Intent intent = new Intent(this, LoginActivity.class);
                 startActivity(intent);
-
             }
         }
         menuItem.setChecked(true);
