@@ -51,7 +51,6 @@ public class DevicePage extends AppCompatActivity implements SetTempDialog.setTe
     public FirebaseData _firebaseData;
     FirebaseAuth mAuth;
     FirebaseFirestore database;
-    DocumentReference docRef;
 
     private static final String TAG = "DevicePages";
 
@@ -59,7 +58,7 @@ public class DevicePage extends AppCompatActivity implements SetTempDialog.setTe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         deviceID = getIntent().getExtras().getString("Device");
-        _firebaseData = new FirebaseData();
+        _firebaseData = new FirebaseData(getApplicationContext(), deviceID);
         _firebaseData.downloadTemps(deviceID);
         setContentView(R.layout.activity_device_page);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
@@ -69,98 +68,11 @@ public class DevicePage extends AppCompatActivity implements SetTempDialog.setTe
         mAuth = FirebaseAuth.getInstance();
         UID = mAuth.getCurrentUser().getUid();
         database = FirebaseFirestore.getInstance();
-        docRef = database.collection("users").document(UID).collection("devices").document(deviceID);
         // Read from the database
         tempsDoc = new ArrayList<>();
         currentTemps = new ArrayList<>();
         alarmsDoc = new ArrayList<>();
         portValues = new ArrayList<>();
-
-        docRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
-            @Override
-            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
-                List<Number> Temps = new ArrayList<Number>() ;
-                List<Number> SetTemps = new ArrayList<Number>();
-                List<Number> LowAlarm = new ArrayList<Number>();
-                List<Number> HighAlarm = new ArrayList<Number>();
-                List<Boolean> AlarmsOn = new ArrayList<Boolean>(4);
-                FieldPath setAlmPath = FieldPath.of("setAlarms", "setTemperatures");
-                FieldPath lowAlmPath = FieldPath.of("setAlarms", "lowAlarms");
-                FieldPath highAlmPath = FieldPath.of("setAlarms", "highAlarms");
-                FieldPath p1Path = FieldPath.of("alarms", "port1Monitoring");
-                FieldPath p2Path = FieldPath.of("alarms", "port2Monitoring");
-                FieldPath p3Path = FieldPath.of("alarms", "port3Monitoring");
-                FieldPath p4Path = FieldPath.of("alarms", "port4Monitoring");
-
-                assert documentSnapshot != null;
-                if(documentSnapshot.getData() != null){
-                    SetTemps = (List<Number>) documentSnapshot.get(setAlmPath);
-                    LowAlarm = (List<Number>) documentSnapshot.get(lowAlmPath);
-                    HighAlarm = (List<Number>) documentSnapshot.get(highAlmPath);
-                    AlarmsOn.add((Boolean) documentSnapshot.get(p1Path));
-                    AlarmsOn.add((Boolean) documentSnapshot.get(p2Path));
-                    AlarmsOn.add((Boolean) documentSnapshot.get(p3Path));
-                    AlarmsOn.add((Boolean) documentSnapshot.get(p4Path));
-                }
-                currentTemps = new ArrayList<>();
-                tempsDoc = new ArrayList<>();
-                alarmsDoc = new ArrayList<>();
-                currentTemps = Temps;
-                tempsDoc.add(SetTemps);
-                tempsDoc.add(LowAlarm);
-                tempsDoc.add(HighAlarm);
-                alarmsDoc = AlarmsOn;
-                portValues.clear();
-                for(int i=0; i< tempsDoc.size()+1; i++){
-                    Log.d("adding tempsDoc", tempsDoc.toString());
-                    Log.d("adding Alarms", alarmsDoc.toString());
-                    portBuff = new PortValues(tempsDoc.get(0).get(i), tempsDoc.get(1).get(i), tempsDoc.get(2).get(i), alarmsDoc.get(i));
-                    portValues.add(portBuff);
-                }
-
-                Log.d(TAG,"current Temps: "+ currentTemps.toString());
-                Log.d(TAG,"set Temps: "+ tempsDoc.toString());
-
-//                adapter.setVals(currentTemps,portValues);
-//                adapter.notifyDataSetChanged();
-            }
-
-
-        });
-
-//        ExpandableListView expandableListView = findViewById(R.id.ELV_ports);
-//        expandableListView.setDividerHeight(1);
-//        adapter = new TempsExpandableListAdapter(currentTemps,portValues);
-//        expandableListView.setAdapter(adapter);
-//        expandableListView.setOnChildClickListener(new ExpandableListView.OnChildClickListener() {
-//            @Override
-//            public boolean onChildClick(ExpandableListView parent, View v, int groupPosition, int childPosition, long id) {
-//                Log.d("ChildPosition", childPosition + "");
-//                if (childPosition <= 2){
-//                    Log.d(TAG, "Open Dialog");
-//                    List<String> titles = new ArrayList<>();
-//                    titles.add("Set Temperature");
-//                    titles.add("Low Alarm");
-//                    titles.add("High Alarm");
-//                    SetTempDialog setTempDialog = new SetTempDialog();
-//                    setTempDialog.setVals(titles.get(childPosition), groupPosition, childPosition);
-//                    setTempDialog.show(getSupportFragmentManager(), "setTempDialog");
-//                }else{
-//                    List<Boolean> newAlarms = new ArrayList<>();
-//                    Map<String, Object> newVals = new HashMap<>();
-//                    portValues.get(groupPosition).setAlarmOn(!portValues.get(groupPosition).getAlarmOn());
-//                    Log.d("alarmsDoc size", alarmsDoc.size() + "");
-//                    for(int i =0; i< alarmsDoc.size(); i++){
-//                        newAlarms.add(portValues.get(i).getAlarmOn());
-//                    }
-//                    newVals.put("alarmsMonitored", newAlarms);
-//                    Log.d("alarmsMonitored", newVals.toString());
-//                    database.collection("users").document(UID).collection("devices").document(deviceID)
-//                            .set(newVals, SetOptions.merge());
-//                }
-//                return true;
-//            }
-//        });
 
         bottomNavigationView.setOnNavigationItemSelectedListener( new BottomNavigationView.OnNavigationItemSelectedListener() {
             @Override

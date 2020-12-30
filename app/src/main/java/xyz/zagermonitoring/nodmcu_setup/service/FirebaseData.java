@@ -1,24 +1,45 @@
 package xyz.zagermonitoring.nodmcu_setup.service;
 
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.DocumentSnapshot;
+import com.google.firebase.firestore.EventListener;
+import com.google.firebase.firestore.FieldPath;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreException;
 import com.google.firebase.firestore.QueryDocumentSnapshot;
 import com.google.firebase.firestore.QuerySnapshot;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
-public class FirebaseData {
+import javax.annotation.Nullable;
+
+import xyz.zagermonitoring.nodmcu_setup.CustomObjects.PortValues;
+import xyz.zagermonitoring.nodmcu_setup.Items.FirebaseTimeTemp;
+
+import static java.security.AccessController.getContext;
+
+public class FirebaseData implements Serializable {
     private static final String TAG = "FirebaseData";
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -32,12 +53,82 @@ public class FirebaseData {
     private ArrayList<Float> powersP2 = new ArrayList<>();
     private ArrayList<Float> powersP3 = new ArrayList<>();
     private ArrayList<Float> powersP4 = new ArrayList<>();
+    private ArrayList<Boolean> _alarmsOn = new ArrayList<>();
+    private List<Number> _setTemps = new ArrayList<>();
+    private List<Number> _lowAlarms = new ArrayList<>();
+    private List<Number> _highAlarms = new ArrayList<>();
+    private Context _context;
+    private String _deviceID;
 
+    public FirebaseData(Context context, String deviceID){
+        _context = context;
+        _deviceID = deviceID;
+        activateDocListener();
+    }
 
-    public void downloadTemps(String deviceID){
+    public void activateDocListener(){
+        DocumentReference docRef = db.collection("users").document(UID).collection("devices").document(_deviceID);
+        docRef.addSnapshotListener(new EventListener<DocumentSnapshot>() {
+            @Override
+            public void onEvent(@Nullable DocumentSnapshot documentSnapshot, @Nullable FirebaseFirestoreException e) {
+                List<Number> Temps = new ArrayList<Number>() ;
+                List<Number> SetTemps = new ArrayList<Number>();
+                List<Number> LowAlarm = new ArrayList<Number>();
+                List<Number> HighAlarm = new ArrayList<Number>();
+                ArrayList<Boolean> alarmsOn = new ArrayList<>();
+                List<Number> setTemps = new ArrayList<>();
+                List<Number> lowAlarms = new ArrayList<>();
+                List<Number> highAlarms = new ArrayList<>();
+                FieldPath setAlmPath = FieldPath.of("setAlarms", "setTemperatures");
+                FieldPath lowAlmPath = FieldPath.of("setAlarms", "lowAlarms");
+                FieldPath highAlmPath = FieldPath.of("setAlarms", "highAlarms");
+                FieldPath p1Path = FieldPath.of("port1On");
+                FieldPath p2Path = FieldPath.of("port2On");
+                FieldPath p3Path = FieldPath.of("port3On");
+                FieldPath p4Path = FieldPath.of("port4On");
 
+                assert documentSnapshot != null;
+                if(documentSnapshot.getData() != null){
+                    Intent intent = new Intent("com.zagermonitoring.FIREBASE_NEWSETTINGS");
+                    try{
+                        Temps = (List<Number>) documentSnapshot.get("currentTemps");
+                        intent.putExtra("com.zagermonitoring.FIREBASE_NEW_CURRENT_TEMP", Temps.toArray());
+                    }catch (Exception ex){
+                        Log.e(TAG, Objects.requireNonNull(ex.getMessage()));
+                    }
+                    try{
+                        setTemps = (List<Number>) documentSnapshot.get(setAlmPath);
+                        lowAlarms = (List<Number>) documentSnapshot.get(lowAlmPath);
+                        highAlarms = (List<Number>) documentSnapshot.get(highAlmPath);
+                        _setTemps = setTemps;
+                        _lowAlarms = lowAlarms;
+                        _highAlarms = highAlarms;
+                        intent.putExtra("com.zagermonitoring.FIREABSE_NEW_SET_TEMPS", (ArrayList<Number>) setTemps);
+                        intent.putExtra("com.zagermonitoring.FIREABSE_NEW_LOW_ALARM", (ArrayList<Number>) lowAlarms);
+                        intent.putExtra("com.zagermonitoring.FIREABSE_NEW_HIGH_ALARM", (ArrayList<Number>) highAlarms);
+
+                    }catch(Exception ex){
+                        Log.e(TAG, Objects.requireNonNull(ex.getMessage()));
+                    }
+                    try{
+                        alarmsOn.add((Boolean) documentSnapshot.get(p1Path));
+                        alarmsOn.add((Boolean) documentSnapshot.get(p2Path));
+                        alarmsOn.add((Boolean) documentSnapshot.get(p3Path));
+                        alarmsOn.add((Boolean) documentSnapshot.get(p4Path));
+                        intent.putExtra("com.zagermonitoring.FIREBASE_NEW_ALARMS_ON", alarmsOn.toArray());
+                        _alarmsOn = alarmsOn;
+                    }catch(Exception ex){
+                        Log.e(TAG, Objects.requireNonNull(ex.getMessage()));
+                    }
+                    LocalBroadcastManager.getInstance(_context).sendBroadcast(intent);
+                }
+            }
+        });
+    }
+
+    public void downloadTemps(String deviceID) {
         Log.d(TAG, "deviceID" + deviceID);
-        db.collection("users/"+UID+"/devices/"+deviceID+"/Temperatures").get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+        db.collection("users/" + UID + "/devices/" + deviceID + "/Temperatures").get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
             @Override
             public void onComplete(@NonNull Task<QuerySnapshot> task) {
                 if (task.isSuccessful()) {
@@ -47,11 +138,11 @@ public class FirebaseData {
                     //get doc date values
                     for (QueryDocumentSnapshot document : task.getResult()) {
                         Map<String, Object> dayValsWrapped = document.getData();
-                        try{
+                        try {
                             Map<String, Object> dayVals = (HashMap) dayValsWrapped.get("temps");
-                            for(Map.Entry<String, Object> secondValsEntry: dayVals.entrySet()){
+                            for (Map.Entry<String, Object> secondValsEntry : dayVals.entrySet()) {
                                 Map<String, ArrayList<Number>> tempArray = (HashMap) secondValsEntry.getValue();
-                                Log.d(TAG, "tempArray" + tempArray.toString());
+                                //Log.d(TAG, "tempArray" + tempArray.toString());
                                 String timeS = secondValsEntry.getKey().replace("T", "");
                                 float tempP1 = tempArray.get("Temps").get(0).floatValue();
                                 float tempP2 = tempArray.get("Temps").get(1).floatValue();
@@ -61,24 +152,37 @@ public class FirebaseData {
                                 float powerP2 = tempArray.get("Powers").get(1).floatValue();
                                 float powerP3 = tempArray.get("Powers").get(2).floatValue();
                                 float powerP4 = tempArray.get("Powers").get(3).floatValue();
-                                docTempsPowers.add(tempP1);docTempsPowers.add(tempP2);docTempsPowers.add(tempP3);docTempsPowers.add(tempP4);
-                                docTempsPowers.add(powerP1);docTempsPowers.add(powerP2);docTempsPowers.add(powerP3);docTempsPowers.add(powerP4);
+                                docTempsPowers.add(tempP1);
+                                docTempsPowers.add(tempP2);
+                                docTempsPowers.add(tempP3);
+                                docTempsPowers.add(tempP4);
+                                docTempsPowers.add(powerP1);
+                                docTempsPowers.add(powerP2);
+                                docTempsPowers.add(powerP3);
+                                docTempsPowers.add(powerP4);
                                 docTimesS.add(timeS);
                                 data.put(timeS, docTempsPowers);
+
                             }
-                        }catch (Exception e){
+                        } catch (Exception e) {
                             Log.e(TAG, e.getMessage());
                         }
                     }
                     // sort and reverse so descending
                     Collections.sort(docTimesS);
                     Collections.reverse(docTimesS);
-                    tempsP1.clear(); tempsP2.clear(); tempsP3.clear(); tempsP4.clear();
-                    powersP1.clear(); powersP2.clear(); powersP3.clear(); powersP4.clear();
+                    tempsP1.clear();
+                    tempsP2.clear();
+                    tempsP3.clear();
+                    tempsP4.clear();
+                    powersP1.clear();
+                    powersP2.clear();
+                    powersP3.clear();
+                    powersP4.clear();
 
                     // get temps and powers from map and convert time string to long
-                    for ( int i = 0; i < docTimesS.size(); i++){
-                        ArrayList<Float> tempsPowers = (ArrayList<Float>)data.get(docTimesS.get(i));
+                    for (int i = 0; i < docTimesS.size(); i++) {
+                        ArrayList<Float> tempsPowers = (ArrayList<Float>) data.get(docTimesS.get(i));
                         long time = Long.parseLong(docTimesS.get(i));
                         times.add(time);
                         tempsP1.add(tempsPowers.get(0));
@@ -91,13 +195,34 @@ public class FirebaseData {
                         powersP4.add(tempsPowers.get(7));
 
                     }
-                    Log.d(TAG, "times " + times.toString());
+                    //Log.d(TAG, "times " + times.toString());
+                    Intent intent = new Intent("com.zagermonitoring.FIREBASE_NEWDATA");
+                    FirebaseTimeTemp ftt1 = new FirebaseTimeTemp(times, tempsP1, powersP1);
+                    FirebaseTimeTemp ftt2 = new FirebaseTimeTemp(times, tempsP2, powersP2);
+                    FirebaseTimeTemp ftt3 = new FirebaseTimeTemp(times, tempsP3, powersP3);
+                    FirebaseTimeTemp ftt4 = new FirebaseTimeTemp(times, tempsP4, powersP4);
+                    intent.putExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P1", ftt1);
+                    intent.putExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P2", ftt2);
+                    intent.putExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P3", ftt3);
+                    intent.putExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P4", ftt4);
+                    LocalBroadcastManager.getInstance(_context).sendBroadcast(intent);
                 } else {
-                    Log.d(TAG, "Error getting documents: ", task.getException());
+                    Log.e(TAG, "Error getting documents: ", task.getException());
                 }
             }
         });
     }
+
+
+    public ArrayList<Boolean> getPortActive(){
+        return _alarmsOn;
+    }
+
+    public List<Number> getSetTemps() { return _setTemps; }
+
+    public List<Number> getLowAlarms() { return _lowAlarms; }
+
+    public List<Number> getHighAlarms() { return _highAlarms; }
 
     public ArrayList<Float> getTempsP1() {
         return tempsP1;
@@ -113,6 +238,22 @@ public class FirebaseData {
 
     public ArrayList<Float> getTempsP4() {
         return tempsP4;
+    }
+
+    public ArrayList<Float> getPowersP1() {
+        return powersP1;
+    }
+
+    public ArrayList<Float> getPowersP2() {
+        return powersP2;
+    }
+
+    public ArrayList<Float> getPowersP3() {
+        return powersP3;
+    }
+
+    public ArrayList<Float> getPowersP4() {
+        return powersP4;
     }
 
     public ArrayList<Long> getTimes() {
