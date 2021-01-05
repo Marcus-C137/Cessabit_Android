@@ -52,6 +52,9 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.firestore.SetOptions;
 import com.google.firebase.iid.FirebaseInstanceId;
 import com.google.firebase.iid.InstanceIdResult;
+import com.google.firebase.installations.FirebaseInstallations;
+import com.google.firebase.installations.InstallationTokenResult;
+import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -61,49 +64,32 @@ import java.util.Map;
 import javax.annotation.Nullable;
 
 
-public class HomePageFragment extends Fragment implements View.OnClickListener {
+public class HomePageFragment extends Fragment {
 
     private static final String TAG = "HomePage";
     private int LOCATION_PERMISSION_CODE=99;
     private boolean activeSubscription;
     private NavController navController;
-    private NavHostFragment navHostFragment;
-    private FragmentManager supportFragmentManager;
     private String UID;
     private FirebaseAuth mAuth;
     private FirebaseUser user;
     private TextView txtView_noDevices;
-    private ListView devicelistView;
     private ImageButton setupBtn;
     private ArrayAdapter adapter;
     private ArrayList<String> arrayList = new ArrayList<>();
     private ArrayList<String> deviceUIDList = new ArrayList<>();
-    private View view;
-    private Context context;
     private OnFragmentInteractionListener mListener;
-    FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private FirebaseFirestore db = FirebaseFirestore.getInstance();
 
     public HomePageFragment() {
         // Required empty public constructor
     }
 
     @Override
-    public void onClick(View v){
-        switch(v.getId()){
-            case R.id.setupBtn:{
-                Log.d("!!!!!!!!!!!!!!!!!!", "Clicked !!!!!!!!!!!!!!11");
-                goToListDevices();
-                break;
-            }
-        }
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        view = inflater.inflate(R.layout.fragment_home_page, container, false);
-        devicelistView = view.findViewById(R.id.deviceListView);
+        View view = inflater.inflate(R.layout.fragment_home_page, container, false);
+        ListView devicelistView = view.findViewById(R.id.deviceListView);
         txtView_noDevices = view.findViewById(R.id.txtView_noDevices);
-        setupBtn = view.findViewById(R.id.setupBtn);
         txtView_noDevices.setVisibility(View.INVISIBLE);
         adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, arrayList);
         devicelistView.setAdapter(adapter);
@@ -119,9 +105,7 @@ public class HomePageFragment extends Fragment implements View.OnClickListener {
                 }
             }
         });
-        setupBtn.setOnClickListener(this);
         populateDeviceList();
-        // Inflate the layout for this fragmentnav_device_container
         return view;
     }
 
@@ -130,30 +114,24 @@ public class HomePageFragment extends Fragment implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         mAuth = FirebaseAuth.getInstance();
         user = mAuth.getCurrentUser();
-        context = getActivity();
+        Context context = getActivity();
         user = FirebaseAuth.getInstance().getCurrentUser();
         UID = user.getUid();
         Log.d("UID", UID);
-        navHostFragment = (NavHostFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
-        NavController navController = navHostFragment.getNavController();
-
-        FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
+        FirebaseInstallations.getInstance().getToken(true).addOnCompleteListener(new OnCompleteListener<InstallationTokenResult>() {
             @Override
-            public void onComplete(@NonNull Task<InstanceIdResult> task) {
-            if (!task.isSuccessful()) {
-                Log.w(TAG, "getInstanceId failed", task.getException());
-                return;
-            }
-            // Get new Instance ID token
-            String token = task.getResult().getToken();
-            db = FirebaseFirestore.getInstance();
-            Map<String, Object> tokenMap = new HashMap<>();
-            tokenMap.put("CM_token",token);
-            db.collection("users").document(UID).set(tokenMap, SetOptions.merge());
-
+            public void onComplete(@NonNull Task<InstallationTokenResult> task) {
+                if (task.getResult() != null){
+                    String token = task.getResult().getToken();
+                    db = FirebaseFirestore.getInstance();
+                    Map<String, Object> tokenMap = new HashMap<>();
+                    tokenMap.put("CM_token",token);
+                    db.collection("users").document(UID).set(tokenMap, SetOptions.merge());
+                }
             }
         });
 
+        // Get new Instance ID token
         DocumentReference docRef = db.collection("payments").document(UID);
         docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
@@ -174,11 +152,8 @@ public class HomePageFragment extends Fragment implements View.OnClickListener {
                 }else{
                     Log.d(TAG, "get sub active failed with ", task.getException());
                 }
-
             }
-
         });
-
     }
 
     private void populateDeviceList() {

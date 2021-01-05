@@ -89,7 +89,8 @@ public class HomePage extends AppCompatActivity implements PurchasesUpdatedListe
             }
         });
         navHostFragment = (NavHostFragment) this.getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
-        NavController navController = navHostFragment.getNavController();
+        navController = navHostFragment.getNavController();
+        Log.d(TAG, "navController " + navController);
         NavigationUI.setupWithNavController(navigationView, navController);
         navigationView.setNavigationItemSelectedListener(this);
         String base64EncodedPublicKey="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn7z1SCLXRKTgCn9U" +

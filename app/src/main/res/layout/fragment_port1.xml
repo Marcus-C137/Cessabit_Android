@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <ScrollView
-    android:id="@+id/ScrollView_P1"
+    android:id="@+id/ScrollView_p1"
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
@@ -14,11 +14,11 @@
     android:layout_height="wrap_content"
     tools:context=".Port1Fragment">
     <TextView
-        android:id="@+id/txtView_port1_header"
+        android:id="@+id/txtView_port_header"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Port1"
+        android:text="Port 1"
         android:textColor="@color/white"
         android:textSize="24sp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -34,10 +34,10 @@
         android:textSize="18sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/txtView_port1_header" />
+        app:layout_constraintTop_toBottomOf="@id/txtView_port_header" />
 
     <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/TempChart_Port1"
+        android:id="@+id/bc_currentTemps_p1"
         android:layout_width="0dp"
         android:layout_height="200dp"
         app:layout_constraintEnd_toEndOf="parent"
@@ -45,7 +45,7 @@
         app:layout_constraintTop_toBottomOf="@+id/txtView_tempChartTitle" />
 
     <SeekBar
-        android:id="@+id/TempSeekBar_port1"
+        android:id="@+id/sb_temp_p1"
         style="@style/Widget.AppCompat.SeekBar.Discrete"
         android:layout_width="300sp"
         android:layout_height="wrap_content"
@@ -53,7 +53,7 @@
         android:max="3"
         android:progress="0"
         android:progressTint="#00FFFFFF"
-        app:layout_constraintTop_toBottomOf="@id/TempChart_Port1"
+        app:layout_constraintTop_toBottomOf="@id/bc_currentTemps_p1"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         />
@@ -66,8 +66,8 @@
         android:textColor="@color/white"
         android:textSize="16sp"
         android:gravity="center"
-        app:layout_constraintLeft_toLeftOf="@id/TempSeekBar_port1"
-        app:layout_constraintTop_toBottomOf="@id/TempSeekBar_port1"
+        app:layout_constraintLeft_toLeftOf="@id/sb_temp_p1"
+        app:layout_constraintTop_toBottomOf="@id/sb_temp_p1"
         android:layout_marginLeft="8dp"/>
     <TextView
         android:id="@+id/txtView_day_p1"
@@ -79,7 +79,7 @@
         android:gravity="center"
         android:layout_marginLeft="70dp"
         app:layout_constraintLeft_toRightOf="@id/txtView_hour_p1"
-        app:layout_constraintTop_toBottomOf="@id/TempSeekBar_port1"/>
+        app:layout_constraintTop_toBottomOf="@id/sb_temp_p1"/>
     <TextView
         android:id="@+id/txtView_week_p1"
         android:layout_height="wrap_content"
@@ -90,7 +90,7 @@
         android:gravity="center"
         android:layout_marginLeft="58dp"
         app:layout_constraintLeft_toRightOf="@id/txtView_day_p1"
-        app:layout_constraintTop_toBottomOf="@id/TempSeekBar_port1"/>
+        app:layout_constraintTop_toBottomOf="@id/sb_temp_p1"/>
     <TextView
         android:id="@+id/txtView_month_p1"
         android:layout_height="wrap_content"
@@ -101,7 +101,7 @@
         android:gravity="center"
         android:layout_marginLeft="50dp"
         app:layout_constraintLeft_toRightOf="@id/txtView_week_p1"
-        app:layout_constraintTop_toBottomOf="@id/TempSeekBar_port1"/>
+        app:layout_constraintTop_toBottomOf="@id/sb_temp_p1"/>
 
     <TextView
         android:id="@+id/txtView_powerChartTitle"
@@ -116,14 +116,14 @@
         app:layout_constraintTop_toBottomOf="@id/txtView_day_p1" />
 
     <com.github.mikephil.charting.charts.LineChart
-        android:id="@+id/PowerChart_Port1"
+        android:id="@+id/PowerChart_p1"
         android:layout_width="0dp"
         android:layout_height="200dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/txtView_powerChartTitle" />
     <SeekBar
-        android:id="@+id/PowerSeekBar_port1"
+        android:id="@+id/sb_power_p1"
         style="@style/Widget.AppCompat.SeekBar.Discrete"
         android:layout_width="300sp"
         android:layout_height="wrap_content"
@@ -133,7 +133,7 @@
         android:progressTint="#00FFFFFF"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/PowerChart_Port1" />
+        app:layout_constraintTop_toBottomOf="@+id/PowerChart_p1" />
     <TextView
         android:id="@+id/txtView_powerhour_p1"
         android:layout_height="wrap_content"
@@ -142,8 +142,8 @@
         android:textColor="@color/white"
         android:textSize="16sp"
         android:gravity="center"
-        app:layout_constraintLeft_toLeftOf="@id/TempSeekBar_port1"
-        app:layout_constraintTop_toBottomOf="@id/PowerSeekBar_port1"
+        app:layout_constraintLeft_toLeftOf="@id/sb_temp_p1"
+        app:layout_constraintTop_toBottomOf="@id/sb_power_p1"
         android:layout_marginLeft="8dp"/>
     <TextView
         android:id="@+id/txtView_powerday_p1"
@@ -155,7 +155,7 @@
         android:gravity="center"
         android:layout_marginLeft="70dp"
         app:layout_constraintLeft_toRightOf="@id/txtView_hour_p1"
-        app:layout_constraintTop_toBottomOf="@id/PowerSeekBar_port1"/>
+        app:layout_constraintTop_toBottomOf="@id/sb_power_p1"/>
     <TextView
         android:id="@+id/txtView_powerweek_p1"
         android:layout_height="wrap_content"
@@ -166,7 +166,7 @@
         android:gravity="center"
         android:layout_marginLeft="58dp"
         app:layout_constraintLeft_toRightOf="@id/txtView_day_p1"
-        app:layout_constraintTop_toBottomOf="@id/PowerSeekBar_port1"/>
+        app:layout_constraintTop_toBottomOf="@id/sb_power_p1"/>
     <TextView
         android:id="@+id/txtView_powermonth_p1"
         android:layout_height="wrap_content"
@@ -177,10 +177,10 @@
         android:gravity="center"
         android:layout_marginLeft="50dp"
         app:layout_constraintLeft_toRightOf="@id/txtView_week_p1"
-        app:layout_constraintTop_toBottomOf="@id/PowerSeekBar_port1"/>
+        app:layout_constraintTop_toBottomOf="@id/sb_power_p1"/>
 
     <Switch
-        android:id="@+id/switch_p1_portOn"
+        android:id="@+id/sw_portOn_p1"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="24dp"
@@ -279,7 +279,7 @@
         app:layout_constraintTop_toBottomOf="@+id/textView5" />
 
     <Button
-        android:id="@+id/btn_p1_sp"
+        android:id="@+id/btn_sp_p1"
         android:layout_width="wrap_content"
         android:layout_height="34dp"
         android:background="#00000000"
@@ -292,7 +292,7 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <Button
-        android:id="@+id/btn_p1_la"
+        android:id="@+id/btn_la_p1"
         android:layout_width="wrap_content"
         android:layout_height="34dp"
         android:background="#00000000"
@@ -305,7 +305,7 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <Button
-        android:id="@+id/btn_p1_ha"
+        android:id="@+id/btn_ha_p1"
         android:layout_width="wrap_content"
         android:layout_height="34dp"
         android:background="#00000000"

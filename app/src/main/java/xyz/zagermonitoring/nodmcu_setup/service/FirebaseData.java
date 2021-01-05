@@ -57,6 +57,7 @@ public class FirebaseData implements Serializable {
     private List<Number> _setTemps = new ArrayList<>();
     private List<Number> _lowAlarms = new ArrayList<>();
     private List<Number> _highAlarms = new ArrayList<>();
+    private Boolean _Estopped = false;
     private Context _context;
     private String _deviceID;
 
@@ -82,6 +83,7 @@ public class FirebaseData implements Serializable {
                 FieldPath setAlmPath = FieldPath.of("setAlarms", "setTemperatures");
                 FieldPath lowAlmPath = FieldPath.of("setAlarms", "lowAlarms");
                 FieldPath highAlmPath = FieldPath.of("setAlarms", "highAlarms");
+                FieldPath EstopPath = FieldPath.of("E-Stop");
                 FieldPath p1Path = FieldPath.of("port1On");
                 FieldPath p2Path = FieldPath.of("port2On");
                 FieldPath p3Path = FieldPath.of("port3On");
@@ -91,8 +93,13 @@ public class FirebaseData implements Serializable {
                 if(documentSnapshot.getData() != null){
                     Intent intent = new Intent("com.zagermonitoring.FIREBASE_NEWSETTINGS");
                     try{
+                        _Estopped = (Boolean) documentSnapshot.get(EstopPath);
+                        intent.putExtra("com.zagermonitoring.FIREBASE_NEW_E-STOP", _Estopped);
+                    }catch (Exception ex){
+                        Log.e(TAG, "Error getting Estop field " + ex.getMessage());
+                    }
+                    try{
                         Temps = (List<Number>) documentSnapshot.get("currentTemps");
-                        intent.putExtra("com.zagermonitoring.FIREBASE_NEW_CURRENT_TEMP", Temps.toArray());
                     }catch (Exception ex){
                         Log.e(TAG, Objects.requireNonNull(ex.getMessage()));
                     }
@@ -128,49 +135,50 @@ public class FirebaseData implements Serializable {
 
     public void downloadTemps(String deviceID) {
         Log.d(TAG, "deviceID" + deviceID);
-        db.collection("users/" + UID + "/devices/" + deviceID + "/Temperatures").get().addOnCompleteListener(new OnCompleteListener<QuerySnapshot>() {
+        db.collection("users/" + UID + "/devices/" + deviceID + "/Temperatures").addSnapshotListener(new EventListener<QuerySnapshot>() {
             @Override
-            public void onComplete(@NonNull Task<QuerySnapshot> task) {
-                if (task.isSuccessful()) {
+            public void onEvent(@NonNull @Nullable QuerySnapshot value,
+                                @Nullable FirebaseFirestoreException e) {
                     ArrayList<String> docTimesS = new ArrayList<>();
-                    ArrayList<Float> docTempsPowers = new ArrayList<>();
                     Map<String, Object> data = new HashMap<>();
-                    //get doc date values
-                    for (QueryDocumentSnapshot document : task.getResult()) {
-                        Map<String, Object> dayValsWrapped = document.getData();
-                        try {
-                            Map<String, Object> dayVals = (HashMap) dayValsWrapped.get("temps");
-                            for (Map.Entry<String, Object> secondValsEntry : dayVals.entrySet()) {
-                                Map<String, ArrayList<Number>> tempArray = (HashMap) secondValsEntry.getValue();
+                //get doc date values
+                for (QueryDocumentSnapshot document : value) {
+                    Map<String, Object> dayValsWrapped = document.getData();
+                    try {
+                        Map<String, Object> dayVals = (HashMap) dayValsWrapped.get("temps");
+                        for (Map.Entry<String, Object> secondValsEntry : dayVals.entrySet()) {
+                            ArrayList<Float> docTempsPowers = new ArrayList<>();
+                            Map<String, ArrayList<Number>> tempArray = (HashMap) secondValsEntry.getValue();
                                 //Log.d(TAG, "tempArray" + tempArray.toString());
                                 String timeS = secondValsEntry.getKey().replace("T", "");
-                                float tempP1 = tempArray.get("Temps").get(0).floatValue();
-                                float tempP2 = tempArray.get("Temps").get(1).floatValue();
-                                float tempP3 = tempArray.get("Temps").get(2).floatValue();
-                                float tempP4 = tempArray.get("Temps").get(3).floatValue();
-                                float powerP1 = tempArray.get("Powers").get(0).floatValue();
-                                float powerP2 = tempArray.get("Powers").get(1).floatValue();
-                                float powerP3 = tempArray.get("Powers").get(2).floatValue();
-                                float powerP4 = tempArray.get("Powers").get(3).floatValue();
-                                docTempsPowers.add(tempP1);
-                                docTempsPowers.add(tempP2);
-                                docTempsPowers.add(tempP3);
-                                docTempsPowers.add(tempP4);
-                                docTempsPowers.add(powerP1);
-                                docTempsPowers.add(powerP2);
-                                docTempsPowers.add(powerP3);
-                                docTempsPowers.add(powerP4);
+                                float doctempP1 = tempArray.get("Temps").get(0).floatValue();
+                                float doctempP2 = tempArray.get("Temps").get(1).floatValue();
+                                float doctempP3 = tempArray.get("Temps").get(2).floatValue();
+                                float doctempP4 = tempArray.get("Temps").get(3).floatValue();
+                                float docpowerP1 = tempArray.get("Powers").get(0).floatValue();
+                                float docpowerP2 = tempArray.get("Powers").get(1).floatValue();
+                                float docpowerP3 = tempArray.get("Powers").get(2).floatValue();
+                                float docpowerP4 = tempArray.get("Powers").get(3).floatValue();
+                                docTempsPowers.add(doctempP1);
+                                docTempsPowers.add(doctempP2);
+                                docTempsPowers.add(doctempP3);
+                                docTempsPowers.add(doctempP4);
+                                docTempsPowers.add(docpowerP1);
+                                docTempsPowers.add(docpowerP2);
+                                docTempsPowers.add(docpowerP3);
+                                docTempsPowers.add(docpowerP4);
                                 docTimesS.add(timeS);
                                 data.put(timeS, docTempsPowers);
 
                             }
-                        } catch (Exception e) {
-                            Log.e(TAG, e.getMessage());
+                        } catch (Exception ex) {
+                            Log.e(TAG, ex.getMessage());
                         }
                     }
                     // sort and reverse so descending
                     Collections.sort(docTimesS);
                     Collections.reverse(docTimesS);
+                    times.clear();
                     tempsP1.clear();
                     tempsP2.clear();
                     tempsP3.clear();
@@ -183,6 +191,7 @@ public class FirebaseData implements Serializable {
                     // get temps and powers from map and convert time string to long
                     for (int i = 0; i < docTimesS.size(); i++) {
                         ArrayList<Float> tempsPowers = (ArrayList<Float>) data.get(docTimesS.get(i));
+                        //Log.d(TAG, "tempsPowers "+ tempsPowers.toString());
                         long time = Long.parseLong(docTimesS.get(i));
                         times.add(time);
                         tempsP1.add(tempsPowers.get(0));
@@ -195,6 +204,7 @@ public class FirebaseData implements Serializable {
                         powersP4.add(tempsPowers.get(7));
 
                     }
+                    //Log.d(TAG, "temps: " + tempsP4);
                     //Log.d(TAG, "times " + times.toString());
                     Intent intent = new Intent("com.zagermonitoring.FIREBASE_NEWDATA");
                     FirebaseTimeTemp ftt1 = new FirebaseTimeTemp(times, tempsP1, powersP1);
@@ -206,13 +216,11 @@ public class FirebaseData implements Serializable {
                     intent.putExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P3", ftt3);
                     intent.putExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P4", ftt4);
                     LocalBroadcastManager.getInstance(_context).sendBroadcast(intent);
-                } else {
-                    Log.e(TAG, "Error getting documents: ", task.getException());
                 }
-            }
         });
     }
 
+    public Boolean getEstopped() { return  _Estopped; };
 
     public ArrayList<Boolean> getPortActive(){
         return _alarmsOn;

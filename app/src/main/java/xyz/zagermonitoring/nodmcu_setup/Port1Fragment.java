@@ -8,8 +8,8 @@ import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import android.util.Log;
@@ -32,14 +32,12 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.github.mikephil.charting.listener.OnChartGestureListener;
-import com.google.android.gms.common.util.ArrayUtils;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.HashMap;
@@ -123,15 +121,15 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
         super.onStart();
         DevicePage devicePage = (DevicePage) getActivity();
         deviceID = devicePage.getDeviceID();
-        scrollView = getView().findViewById(R.id.ScrollView_P1);
-        tempSeekBar = getView().findViewById(R.id.TempSeekBar_port1);
-        tempChart = getView().findViewById(R.id.TempChart_Port1);
-        powerSeekBar = getView().findViewById(R.id.PowerSeekBar_port1);
-        powerChart = getView().findViewById(R.id.PowerChart_Port1);
-        switchPortOn = getView().findViewById(R.id.switch_p1_portOn);
-        setTempBtn = getView().findViewById(R.id.btn_p1_sp);
-        lowAlarmBtn = getView().findViewById(R.id.btn_p1_la);
-        highAlarmBtn = getView().findViewById(R.id.btn_p1_ha);
+        scrollView = getView().findViewById(R.id.ScrollView_p1);
+        tempSeekBar = getView().findViewById(R.id.sb_temp_p1);
+        tempChart = getView().findViewById(R.id.bc_currentTemps_p1);
+        powerSeekBar = getView().findViewById(R.id.sb_power_p1);
+        powerChart = getView().findViewById(R.id.PowerChart_p1);
+        switchPortOn = getView().findViewById(R.id.sw_portOn_p1);
+        setTempBtn = getView().findViewById(R.id.btn_sp_p1);
+        lowAlarmBtn = getView().findViewById(R.id.btn_la_p1);
+        highAlarmBtn = getView().findViewById(R.id.btn_ha_p1);
         setUpSeek();
         setUpChart();
         ArrayList<Long> times = devicePage._firebaseData.getTimes();
@@ -141,21 +139,21 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
         List<Number> setTemps = devicePage._firebaseData.getSetTemps();
         List<Number> lowAlarms = devicePage._firebaseData.getLowAlarms();
         List<Number> highAlarms = devicePage._firebaseData.getHighAlarms();
-        if (setTemps.size() > 0 && lowAlarms.size() > 0 && highAlarms.size() > 0){
-            String stText = setTemps.get(0).toString() + " F";
-            String laText = lowAlarms.get(0).toString() + " F";
-            String haText = highAlarms.get(0).toString() + " F";
+        if (setTemps != null && lowAlarms != null && highAlarms != null){
+            String stText = setTemps.get(portIndex).toString() + " F";
+            String laText = lowAlarms.get(portIndex).toString() + " F";
+            String haText = highAlarms.get(portIndex).toString() + " F";
             setTempBtn.setText(stText);
             lowAlarmBtn.setText(laText);
             highAlarmBtn.setText(haText);
         }
-        if (portsOn.size() > 0){
-            switchPortOn.setChecked(portsOn.get(0));
+        if (portsOn != null && !portsOn.isEmpty()){
+            switchPortOn.setChecked(portsOn.get(portIndex));
         }
-        if (temps.size() > 0 && times.size() > 0){
+        if (temps != null && times != null){
             fillTempChart(temps, times);
         }
-        if (temps.size() > 0 && powers.size() > 0){
+        if (powers != null && times !=null){
             fillPowerChart(powers, times);
         }
 
@@ -164,9 +162,9 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
         switchPortOn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-                Map<String, Object> port1OnMap = new HashMap<>();
-                port1OnMap.put("port1On", b);
-                db.collection("users").document(UID).collection("devices").document(deviceID).set(port1OnMap, SetOptions.merge());
+                Map<String, Object> portOnMap = new HashMap<>();
+                portOnMap.put("port1On", b);
+                db.collection("users").document(UID).collection("devices").document(deviceID).set(portOnMap, SetOptions.merge());
                 if (b) Toast.makeText(getContext(), "Port On", Toast.LENGTH_LONG).show();
                 if (!b) Toast.makeText(getContext(), "Port Off", Toast.LENGTH_LONG).show();
             }
@@ -213,7 +211,14 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
             mParam1 = getArguments().getString(ARG_PARAM1);
             mParam2 = getArguments().getString(ARG_PARAM2);
         }
-
+        OnBackPressedCallback callback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                Intent intent = new Intent(getActivity(),HomePage.class);
+                startActivity(intent);
+            }
+        };
+        requireActivity().getOnBackPressedDispatcher().addCallback(this, callback);
     }
 
     @Override
@@ -254,8 +259,8 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
     }
 
     private void fillTempChart(ArrayList<Float> temps, ArrayList<Long> times){
-        Log.d(TAG, "temps size: " + temps.size());
-        Log.d(TAG, "times size: " + times.size());
+        //Log.d(TAG, "temps size: " + temps.size());
+        //Log.d(TAG, "times size: " + times.size());
         ArrayList<Long> timeSlice = new ArrayList<>();
         ArrayList<Float> displayTemps = new ArrayList<>();
         long startTime = (Calendar.getInstance().getTimeInMillis() / 1000) - 10; //10 sec delay offset
@@ -263,9 +268,6 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
         for(int i=0; i<numOfPoints; i++){
             timeSlice.add(startTime - i*tempDatGran);
         }
-        //Log.d(TAG, "timeSlice " + timeSlice.toString());
-        //Log.d(TAG, "timeSlice " + timeSlice.toString());
-        //make displayTemps find non congruent temp snap shots (device off) fill with zero
 
         for (int i=0; i<numOfPoints; i++){
             long timeInt = timeSlice.get(i);
@@ -287,10 +289,6 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
             }
         }
 
-
-        //Log.d(TAG, "displayTemps size" + displayTemps.size());
-        //Log.d(TAG, "timeSlice size" + timeSlice.size());
-        //Log.d(TAG, "displayTemps " + displayTemps.toString());
         ArrayList<Entry> values = new ArrayList<>();
         Collections.reverse(timeSlice);
         Collections.reverse(displayTemps);
@@ -302,10 +300,9 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
         setTempData(values);
     }
 
-
     private void fillPowerChart(ArrayList<Float> powers, ArrayList<Long> times){
-        Log.d(TAG, "powers size: " + powers.size());
-        Log.d(TAG, "times size: " + times.size());
+        //Log.d(TAG, "powers size: " + powers.size());
+        //Log.d(TAG, "times size: " + times.size());
         ArrayList<Long> timeSlice = new ArrayList<>();
         ArrayList<Float> displayPowers = new ArrayList<>();
         long startTime = (Calendar.getInstance().getTimeInMillis() / 1000) - 10; //10 sec delay offset
@@ -352,16 +349,6 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
         setPowerData(values);
     }
 
-//    private void appendData(Entry value){
-//        if (tempChart.getData() != null && tempChart.getData().getDataSetCount() > 0){
-//            set1 = (LineDataSet) tempChart.getData().getDataSetByIndex(0);
-//            set1.addEntry(value);
-//            set1.notifyDataSetChanged();
-//            tempChart.getData().notifyDataChanged();
-//            tempChart.notifyDataSetChanged();
-//        }
-//    }
-
     private void setTempData(ArrayList<Entry> values){
         List<Integer> colors = new ArrayList<>();
 
@@ -387,7 +374,7 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
         LineData tempLineData = new LineData(dataSets);
         tempChart.clear();
         tempChart.setData(tempLineData);
-        Log.d(TAG, tempChart.getData().getDataSets().toString());
+        //Log.d(TAG, tempChart.getData().getDataSets().toString());
         tempChart.invalidate();
 
     }
@@ -417,7 +404,7 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
         LineData powerLineData = new LineData(dataSets);
         powerChart.clear();
         powerChart.setData(powerLineData);
-        Log.d(TAG, powerChart.getData().getDataSets().toString());
+        //Log.d(TAG, powerChart.getData().getDataSets().toString());
         powerChart.invalidate();
 
     }
@@ -431,7 +418,7 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
                 int dayDataGranularity = 240; //seconds
                 int weekDataGranularity = 1680; //seconds
                 int monthDataGranularity = 7200; //seconds
-                Log.d(TAG, "progress " + progress);
+                //Log.d(TAG, "progress " + progress);
                 switch(progress){
                     case 0:
                         tempDatGran = hourDataGranularity;
@@ -469,7 +456,7 @@ public class Port1Fragment extends Fragment implements NewTempDialogFragment.OnN
                 int dayDataGranularity = 240; //seconds
                 int weekDataGranularity = 1680; //seconds
                 int monthDataGranularity = 7200; //seconds
-                Log.d(TAG, "progress " + progress);
+                //Log.d(TAG, "progress " + progress);
                 switch(progress){
                     case 0:
                         powerDatGran = hourDataGranularity;
