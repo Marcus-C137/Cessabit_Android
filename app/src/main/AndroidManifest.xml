@@ -4,7 +4,6 @@
     package="xyz.zagermonitoring.nodmcu_setup">
 
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
@@ -26,13 +25,10 @@
         </service>
 
         <activity android:name=".DevicePage"            android:screenOrientation="portrait" tools:ignore="LockedOrientationActivity"/>
-        <activity android:name=".ChooseWifi"            android:screenOrientation="portrait" tools:ignore="LockedOrientationActivity"/>
         <activity android:name=".HomePage"              android:screenOrientation="portrait" tools:ignore="LockedOrientationActivity"/>
         <activity android:name=".LoginActivity"         android:screenOrientation="portrait" tools:ignore="LockedOrientationActivity"/>
         <activity android:name=".VerifyEmailActivity"   android:screenOrientation="portrait" tools:ignore="LockedOrientationActivity"/>
         <activity android:name=".RegisterActivity"      android:screenOrientation="portrait" tools:ignore="LockedOrientationActivity"/>
-        <activity android:name=".ChooseDevice"          android:screenOrientation="portrait" tools:ignore="LockedOrientationActivity"/>
-        <activity android:name=".DeviceSetup"           android:screenOrientation="portrait" tools:ignore="LockedOrientationActivity"/>
         <activity android:name=".MainActivity"          android:screenOrientation="portrait" tools:ignore="LockedOrientationActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

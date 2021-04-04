@@ -82,14 +82,17 @@ public class FirebaseAlerts extends FirebaseMessagingService {
      */
     @Override
     public void onNewToken(String token) {
-        Log.w(TAG, "Refreshed token: " + token);
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        String UID = user.getUid();
-        FirebaseFirestore database = FirebaseFirestore.getInstance();
-        Map<String, Object> tokenMap = new HashMap<>();
-        tokenMap.put("CM_token",token);
-        database.collection("users").document(UID).set(tokenMap, SetOptions.merge());
-
+        Log.d(TAG, "Refreshed token: " + token);
+        try{
+            FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+            String UID = user.getUid();
+            FirebaseFirestore database = FirebaseFirestore.getInstance();
+            Map<String, Object> tokenMap = new HashMap<>();
+            tokenMap.put("CM_token",token);
+            database.collection("users").document(UID).set(tokenMap, SetOptions.merge());
+        }catch(Exception e) {
+            Log.w(TAG, e.getMessage());
+        }
         // If you want to send messages to this application instance or
         // manage this apps subscriptions on the server side, send the
         // Instance ID token to your app server.

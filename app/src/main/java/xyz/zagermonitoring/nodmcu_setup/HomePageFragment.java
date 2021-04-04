@@ -22,6 +22,7 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 
+import android.provider.ContactsContract;
 import android.security.ConfirmationAlreadyPresentingException;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -69,17 +70,18 @@ public class HomePageFragment extends Fragment {
     private static final String TAG = "HomePage";
     private int LOCATION_PERMISSION_CODE=99;
     private boolean activeSubscription;
-    private NavController navController;
     private String UID;
+    private NavController navController;
+    private NavHostFragment navHostFragment;
     private FirebaseAuth mAuth;
     private FirebaseUser user;
-    private TextView txtView_noDevices;
-    private ImageButton setupBtn;
-    private ArrayAdapter adapter;
-    private ArrayList<String> arrayList = new ArrayList<>();
-    private ArrayList<String> deviceUIDList = new ArrayList<>();
-    private OnFragmentInteractionListener mListener;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
+    private TextView txtView_noDevices;
+    private ListView deviceListView;
+    private View view;
+    private ArrayAdapter adapter;
+    private ArrayList<String> deviceUIDList = new ArrayList<>();
+    private ArrayList<String> nickNameList = new ArrayList<>();
 
     public HomePageFragment() {
         // Required empty public constructor
@@ -87,25 +89,32 @@ public class HomePageFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_home_page, container, false);
-        ListView devicelistView = view.findViewById(R.id.deviceListView);
+
+        view = inflater.inflate(R.layout.fragment_home_page, container, false);
+        deviceListView = view.findViewById(R.id.deviceListView);
         txtView_noDevices = view.findViewById(R.id.txtView_noDevices);
+        navHostFragment = (NavHostFragment) getActivity().getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
+        navController = navHostFragment.getNavController();
+
         txtView_noDevices.setVisibility(View.INVISIBLE);
-        adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, arrayList);
-        devicelistView.setAdapter(adapter);
-        devicelistView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        adapter = new ArrayAdapter<>(getActivity(), android.R.layout.simple_list_item_1, nickNameList);
+        navHostFragment = (NavHostFragment) this.getActivity().getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
+
+        deviceListView.setAdapter(adapter);
+        deviceListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 if(activeSubscription){
                     Log.d(TAG, "POSITION " + position);
-
-                    goToDevicePage(deviceUIDList.get(position));
+                    goToDevicePage(deviceUIDList.get(position), nickNameList.get(position));
                 }else{
                     navController.navigate(R.id.subscriptionFragment);
                 }
             }
         });
+
         populateDeviceList();
+
         return view;
     }
 
@@ -113,11 +122,7 @@ public class HomePageFragment extends Fragment {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mAuth = FirebaseAuth.getInstance();
-        user = mAuth.getCurrentUser();
-        Context context = getActivity();
-        user = FirebaseAuth.getInstance().getCurrentUser();
-        UID = user.getUid();
-        Log.d("UID", UID);
+        UID = FirebaseAuth.getInstance().getCurrentUser().getUid();
         FirebaseInstallations.getInstance().getToken(true).addOnCompleteListener(new OnCompleteListener<InstallationTokenResult>() {
             @Override
             public void onComplete(@NonNull Task<InstallationTokenResult> task) {
@@ -132,7 +137,7 @@ public class HomePageFragment extends Fragment {
         });
 
         // Get new Instance ID token
-        DocumentReference docRef = db.collection("payments").document(UID);
+        DocumentReference docRef = db.collection("users").document(UID);
         docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
             public void onComplete(@NonNull Task<DocumentSnapshot> task) {
@@ -143,9 +148,9 @@ public class HomePageFragment extends Fragment {
                     }
                     if(document.exists()) {
                         Log.d(TAG, document.getData().toString());
-                        if (document.contains("Subscription_Active")) {
-                            activeSubscription = document.getBoolean("Subscription_Active");
-                            Log.d(TAG, "Subscription_Active found");
+                        if (document.contains("Subscribed")) {
+                            activeSubscription = document.getBoolean("Subscribed");
+                            Log.d(TAG, "Subscribed");
                         }
                     }
 
@@ -156,8 +161,9 @@ public class HomePageFragment extends Fragment {
         });
     }
 
+
+
     private void populateDeviceList() {
-        String UID = user.getUid();
         db.collection("users").document(UID).collection("devices")
             .addSnapshotListener(new EventListener<QuerySnapshot>() {
                  @Override
@@ -167,7 +173,7 @@ public class HomePageFragment extends Fragment {
                          Log.w(TAG, "device list collection listener error");
                          return;
                      }
-                     arrayList.clear();
+                     nickNameList.clear();
                      for (QueryDocumentSnapshot document : snapshots) {
                          deviceUIDList.add(document.getId());
                          Log.d(TAG, "deviceUIDList" + deviceUIDList.toString());
@@ -177,87 +183,28 @@ public class HomePageFragment extends Fragment {
                          }catch (Exception ex){
                             Log.e(TAG, ex.getMessage());
                          }
-                         arrayList.add(deviceName);
+                         nickNameList.add(deviceName);
                          adapter.notifyDataSetChanged();
                      }
-                     if (arrayList.size() == 0) {
+                     if (nickNameList.size() == 0) {
                          Log.d("Setting to Visible","now");
                          txtView_noDevices.setVisibility(View.VISIBLE);
 
                      } else {
                          txtView_noDevices.setVisibility(View.INVISIBLE);
                      }
-                     Log.d(TAG, arrayList.toString());
+                     Log.d(TAG, nickNameList.toString());
                  }
              });
     }
 
-    private void goToDevicePage(String Device){
+    private void goToDevicePage(String Device, String NickName){
         Bundle bundle = new Bundle();
         bundle.putString("Device", Device);
+        bundle.putString("NickName", NickName);
         Intent intent = new Intent(getActivity(),DevicePage.class);
         intent.putExtras(bundle);
         startActivity(intent);
-    }
-
-
-    private void goToListDevices(){
-        Log.d("button clicked","here");
-        if (ContextCompat.checkSelfPermission(getActivity(),
-                Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            Log.d("does", "not have permission");
-            if (ActivityCompat.shouldShowRequestPermissionRationale(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION)){
-                Log.d(" ", "Alert Builder Coming up");
-
-                new AlertDialog.Builder(getActivity())
-                .setTitle("Permission needed")
-                .setMessage("To set up your new device this app will need wifi configuration permission. Because WiFi " +
-                        "can technically tell your rough location, android request that a user gives access to location services." +
-                        "If you agree, press ok when location permission is requested")
-                .setPositiveButton("ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, LOCATION_PERMISSION_CODE);
-                    }
-                })
-                .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                    }
-                }).create().show();
-            }else{
-                requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION}, LOCATION_PERMISSION_CODE);
-            }
-        }
-        if(ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED){
-            Intent intent = new Intent(getActivity(), ChooseDevice.class);
-            startActivity(intent);
-        }
-    }
-
-    private void LogOut(){
-        mAuth.signOut();
-        Intent intent = new Intent(getActivity(), LoginActivity.class);
-        startActivity(intent);
-    }
-
-    @Override
-    public void onAttach(Context context) {
-        super.onAttach(context);
-
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        Log.d("grantResults", grantResults + "");
-        if (requestCode == LOCATION_PERMISSION_CODE) {
-            if (grantResults.length>0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Log.d("onRequestPermissions", "on");
-                Intent intent = new Intent(getActivity(), ChooseDevice.class);
-                startActivity(intent);
-            }
-        }
     }
 
     /**

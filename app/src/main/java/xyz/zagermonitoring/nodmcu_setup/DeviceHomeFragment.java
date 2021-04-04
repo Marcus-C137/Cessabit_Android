@@ -5,11 +5,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
+import android.graphics.Paint;
+import android.graphics.Shader;
 import android.os.Bundle;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.navigation.fragment.NavHostFragment;
 
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -38,6 +44,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import xyz.zagermonitoring.nodmcu_setup.Items.FirebaseTimeTemp;
+import xyz.zagermonitoring.nodmcu_setup.Items.FirebaseTimeTempUpdate;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -58,7 +65,9 @@ public class DeviceHomeFragment extends Fragment {
     private String mParam2;
 
     private String deviceID;
+    private String deviceNickName;
     private Boolean Estopped;
+    private Boolean Online;
     private FirebaseFirestore db = FirebaseFirestore.getInstance();
     private FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     private String UID = user.getUid();
@@ -66,6 +75,8 @@ public class DeviceHomeFragment extends Fragment {
     private BarChart barChart;
     private TextView tvStatus;
     private Button btnEstop;
+    private Button btnHome;
+    private TextView txtDevice;
 
     public DeviceHomeFragment() {
         // Required empty public constructor
@@ -88,98 +99,6 @@ public class DeviceHomeFragment extends Fragment {
         fragment.setArguments(args);
         return fragment;
     }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        tvStatus = getView().findViewById(R.id.tv_device_status);
-        barChart = getView().findViewById(R.id.bc_currentTemps_p1);
-        btnEstop = getView().findViewById(R.id.btn_estop);
-        Estopped = devicePage._firebaseData.getEstopped();
-        ArrayList<Long> times = devicePage._firebaseData.getTimes();
-        ArrayList<Float> tempsP1 = devicePage._firebaseData.getTempsP1();
-        ArrayList<Float> tempsP2 = devicePage._firebaseData.getTempsP2();
-        ArrayList<Float> tempsP3 = devicePage._firebaseData.getTempsP3();
-        ArrayList<Float> tempsP4 = devicePage._firebaseData.getTempsP4();
-        Long latestTime;
-        Float latestTempP1, latestTempP2, latestTempP3, latestTempP4;
-        if (times.size() > 0){
-            latestTime = times.get(0);
-            latestTempP1 = tempsP1.get(0);
-            latestTempP2 = tempsP2.get(0);
-            latestTempP3 = tempsP3.get(0);
-            latestTempP4 = tempsP4.get(0);
-        }else{
-            latestTime = 0L;
-            latestTempP1 = 0f;
-            latestTempP2 = 0f;
-            latestTempP3 = 0f;
-            latestTempP4 = 0f;
-        }
-        setUpChart();
-        fillChart(latestTime, latestTempP1, latestTempP2, latestTempP3, latestTempP4);
-        String status;
-        if (Estopped){
-            status = "Stopped";
-        }else{
-            status = "Online";
-        }
-        tvStatus.setText(status);
-        BroadcastReceiver br = new BroadcastReceiver(){
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if("com.zagermonitoring.FIREBASE_NEWDATA".equals(intent.getAction())){
-                    FirebaseTimeTemp ftt1 = intent.getParcelableExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P1");
-                    FirebaseTimeTemp ftt2 = intent.getParcelableExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P2");
-                    FirebaseTimeTemp ftt3 = intent.getParcelableExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P3");
-                    FirebaseTimeTemp ftt4 = intent.getParcelableExtra("com.zagermonitoring.FIREBASE_NEWTEMP_P4");
-                    Long time = ftt1.getTimes().get(0);
-                    Float temp1 = ftt1.getTemps().get(0);
-                    Float temp2 = ftt2.getTemps().get(0);
-                    Float temp3 = ftt3.getTemps().get(0);
-                    Float temp4 = ftt4.getTemps().get(0);
-                    fillChart(time, temp1, temp2, temp3, temp4);
-                }
-            }
-        };
-        BroadcastReceiver br1 = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if("com.zagermonitoring.FIREBASE_NEWSETTINGS".equals(intent.getAction())){
-                    Estopped = intent.getBooleanExtra("com.zagermonitoring.FIREBASE_NEW_E-STOP", false);
-                    String status;
-                    if (Estopped){
-                        status = "Stopped";
-                    }else{
-                        status = "Online";
-                    }
-                    tvStatus.setText(status);
-                }
-            }
-        };
-        LocalBroadcastManager.getInstance(getContext()).registerReceiver(br , new IntentFilter("com.zagermonitoring.FIREBASE_NEWDATA"));
-        LocalBroadcastManager.getInstance(getContext()).registerReceiver(br1 , new IntentFilter("com.zagermonitoring.FIREBASE_NEWSETTINGS"));
-        btnEstop.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Estopped = !Estopped;
-                Map<String, Boolean> EStopField = new HashMap<>();
-                EStopField.put("E-Stop", Estopped);
-                db.document("users/" + UID + "/devices/" + deviceID).set(EStopField, SetOptions.merge());
-                if (Estopped){
-                    Toast.makeText(devicePage, "Power ShutOff Activated", Toast.LENGTH_SHORT).show();
-                }else{
-                    Toast.makeText(devicePage, "Power ShutOff Deactivated", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -198,14 +117,128 @@ public class DeviceHomeFragment extends Fragment {
 
     }
 
+
+
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        devicePage = (DevicePage) getActivity();
-        deviceID = devicePage.getDeviceID();
 
         // Inflate the layout for this fragment
         return inflater.inflate(R.layout.fragment_device_home, container, false);
+    }
+
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        tvStatus = view.findViewById(R.id.tv_device_status);
+        barChart = view.findViewById(R.id.bc_currentTemps_p1);
+        btnEstop = view.findViewById(R.id.btn_estop);
+        btnHome = view.findViewById(R.id.btn_home);
+        txtDevice = view.findViewById(R.id.txtView_deviceHomeHeader);
+        devicePage = (DevicePage) getActivity();
+        deviceID = devicePage.getDeviceID();
+        deviceNickName = devicePage.getDeviceNickName();
+        txtDevice.setText(deviceNickName);
+        Estopped = devicePage._firebaseData.getEstopped();
+        Online = devicePage._firebaseData.getOnline();
+        Long latestTime = devicePage._firebaseData.getLatestTime();
+        Float latestTempP1 = devicePage._firebaseData.getLatestTempP1();
+        Float latestTempP2 = devicePage._firebaseData.getLatestTempP2();
+        Float latestTempP3 = devicePage._firebaseData.getLatestTempP3();
+        Float latestTempP4 = devicePage._firebaseData.getLatestTempP4();
+        setUpChart();
+        fillChart(latestTime, latestTempP1, latestTempP2, latestTempP3, latestTempP4);
+        String status;
+        if (!Online){
+            status = "Offline";
+            btnEstop.setText("Shut Off Power");
+        }else if (Estopped){
+            status = "Power Shutdown";
+            btnEstop.setText("Restore Power");
+        }else{
+            status = "Online";
+        }
+        tvStatus.setText(status);
+        BroadcastReceiver br = new BroadcastReceiver(){
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if("com.zagermonitoring.FIREBASE_NEWDATA_POINT".equals(intent.getAction())){
+                    FirebaseTimeTempUpdate fttu1 = intent.getParcelableExtra("com.zagermonitoring.FIREBASE_NEWTEMP_POINT_P1");
+                    FirebaseTimeTempUpdate fttu2 = intent.getParcelableExtra("com.zagermonitoring.FIREBASE_NEWTEMP_POINT_P2");
+                    FirebaseTimeTempUpdate fttu3 = intent.getParcelableExtra("com.zagermonitoring.FIREBASE_NEWTEMP_POINT_P3");
+                    FirebaseTimeTempUpdate fttu4 = intent.getParcelableExtra("com.zagermonitoring.FIREBASE_NEWTEMP_POINT_P4");
+                    Long time = fttu1.getTime();
+                    Float temp1 = fttu1.getTemp();
+                    Float temp2 = fttu2.getTemp();
+                    Float temp3 = fttu3.getTemp();
+                    Float temp4 = fttu4.getTemp();
+                    fillChart(time, temp1, temp2, temp3, temp4);
+                }
+            }
+        };
+        BroadcastReceiver br1 = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if("com.zagermonitoring.FIREBASE_NEWSETTINGS".equals(intent.getAction())){
+                    Estopped = intent.getBooleanExtra("com.zagermonitoring.FIREBASE_NEW_E-STOP", false);
+                    Online = intent.getBooleanExtra("com.zagermonitoring.FIREBASE_NEW_ONLINE_STATUS", false);
+                    String status;
+                    if (!Online){
+                        status = "Offline";
+                        btnEstop.setText("Shut Off Power");
+                    }else if (Estopped){
+                        status = "Power Shutdown";
+                        btnEstop.setText("Restore Power");
+                    }else{
+                        status = "Online";
+                    }
+                    tvStatus.setText(status);
+                }
+            }
+        };
+        LocalBroadcastManager.getInstance(getContext()).registerReceiver(br , new IntentFilter("com.zagermonitoring.FIREBASE_NEWDATA_POINT"));
+        LocalBroadcastManager.getInstance(getContext()).registerReceiver(br1 , new IntentFilter("com.zagermonitoring.FIREBASE_NEWSETTINGS"));
+
+        btnEstop.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Estopped = !Estopped;
+                Map<String, Boolean> EStopField = new HashMap<>();
+                EStopField.put("Estop", Estopped);
+                db.document("users/" + UID + "/devices/" + deviceID).set(EStopField, SetOptions.merge());
+                if (Estopped){
+                    Toast.makeText(devicePage, "Power ShutOff Activated", Toast.LENGTH_SHORT).show();
+                }else{
+                    Toast.makeText(devicePage, "Power ShutOff Deactivated", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+
+        btnHome.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Intent intent = new Intent(getActivity(),HomePage.class);
+                startActivity(intent);
+            }
+        });
+    }
+
+    @Override
+    public void onViewStateRestored(@Nullable Bundle savedInstanceState) {
+        super.onViewStateRestored(savedInstanceState);
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
     }
 
     private void fillChart(Long time, Float p1Temp, Float p2Temp, Float p3Temp, Float p4Temp){
@@ -229,7 +262,8 @@ public class DeviceHomeFragment extends Fragment {
         BarDataSet set;
         set = new BarDataSet(values, "");
         set.setDrawIcons(false);
-        set.setColor(Color.argb(255, 30, 120, 255));
+        set.setGradientColor(Color.parseColor("#0000FF"), Color.parseColor("#00dadf"));
+        //set.setColor(Color.parseColor("#FF00dadf"));
         set.setValueTextColor(Color.WHITE);
         ArrayList<IBarDataSet> dataSets = new ArrayList<>();
         dataSets.add(set);

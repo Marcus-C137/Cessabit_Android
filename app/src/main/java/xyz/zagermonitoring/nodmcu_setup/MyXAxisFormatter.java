@@ -35,6 +35,7 @@ public class MyXAxisFormatter extends ValueFormatter {
     public void setStartTime(long startTime){
         _startTime = startTime;
     }
+    public long getStartTime() { return  _startTime; }
 
     @Override
     public String getAxisLabel(float index, AxisBase axisBase){

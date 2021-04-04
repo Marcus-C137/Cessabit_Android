@@ -14,15 +14,12 @@ import android.widget.Toast;
 public class SubscriptionFragment extends Fragment{
 
     private OnFragmentInteractionListener mListener;
-    private int billingResponseCode;
-
     private Button buyButton;
-
+    private int billingResponseCode;
 
     public SubscriptionFragment() {
         // Required empty public constructor
     }
-
 
     public interface OnFragmentInteractionListener{
         void buyButtonClicked();

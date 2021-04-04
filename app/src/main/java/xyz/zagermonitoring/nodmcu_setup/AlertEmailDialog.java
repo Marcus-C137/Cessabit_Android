@@ -30,6 +30,7 @@ public class AlertEmailDialog extends AppCompatDialogFragment {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.layout_set_temp,null);
+        editTextSetTemp = view.findViewById(R.id.editTextSetTemp);
 
         builder.setView(view)
                 .setTitle("New " + title)
@@ -47,7 +48,7 @@ public class AlertEmailDialog extends AppCompatDialogFragment {
 
                     }
                 });
-        editTextSetTemp = view.findViewById(R.id.editTextSetTemp);
+
 
         return builder.create();
     }
@@ -55,7 +56,6 @@ public class AlertEmailDialog extends AppCompatDialogFragment {
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-
         try{
             listener = (setTempsDialogListener) context;
         }catch(ClassCastException e){

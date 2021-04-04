@@ -48,19 +48,12 @@ public class AlertFragment extends Fragment {
     private FirebaseFirestore db;
     private FirebaseFunctions mFunctions;
     private Dialog alertDialog;
-    private Dialog alertAddEmail;
     private Dialog alertAddPhnNum;
     private Button alertAddPhoneNumberBtn;
-    private Button alertAddEmailBtn;
-    private ArrayList<String> emailList;
     private ArrayList<String> phnNumList;
-    private ArrayList<AlertItem> emailItems;
     private ArrayList<AlertItem> phnNumItems;
-    private RecyclerView emailRV;
     private RecyclerView phnNumRV;
-    private AlertEmailAdapter emailAdapter;
     private AlertPhoneNumAdapter phnNumAdapter;
-    private RecyclerView.LayoutManager emailLayoutManager;
     private RecyclerView.LayoutManager phnNumLayoutManager;
     private static final String TAG = "AlertFragment";
 
@@ -83,34 +76,17 @@ public class AlertFragment extends Fragment {
         View view = inflater.inflate(R.layout.fragment_alert, container, false);
 
         alertDialog = new Dialog(getContext());
-        alertAddEmail = new Dialog(getContext());
         alertAddPhnNum = new Dialog(getContext());
 
         alertAddPhoneNumberBtn = view.findViewById(R.id.alertAddPhoneNumberBtn);
-        alertAddEmailBtn= view.findViewById(R.id.alertAddEmailBtn);
-        emailRV = view.findViewById(R.id.alertEmailsRV);
         phnNumRV = view.findViewById(R.id.alertPhoneNumbersRV);
 
-        emailList = new ArrayList<>();
         phnNumList = new ArrayList<>();
-        emailItems = new ArrayList<>();
         phnNumItems = new ArrayList<>();
-
-        emailLayoutManager = new LinearLayoutManager(getContext());
-        emailAdapter = new AlertEmailAdapter(emailItems);
-        emailRV.setLayoutManager(emailLayoutManager);
-        emailRV.setAdapter(emailAdapter);
         phnNumLayoutManager = new LinearLayoutManager(getContext());
         phnNumAdapter = new AlertPhoneNumAdapter(phnNumItems);
         phnNumRV.setLayoutManager(phnNumLayoutManager);
         phnNumRV.setAdapter(phnNumAdapter);
-
-        emailAdapter.setOnItemClickListener(new AlertEmailAdapter.OnAlertEmailClickListener(){
-            @Override
-            public void onAlertEmailClick(int position){
-                ShowPopupEmail(emailList.get(position));
-            }
-        });
 
         phnNumAdapter.setOnClickListener(new AlertPhoneNumAdapter.OnAlertPhoneNumClickListener() {
             @Override
@@ -119,12 +95,6 @@ public class AlertFragment extends Fragment {
             }
         });
 
-        alertAddEmailBtn.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View view){
-                ShowAddEmail(view);
-            }
-        });
         alertAddPhoneNumberBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) { ShowAddPhoneNumber(view);
@@ -136,18 +106,6 @@ public class AlertFragment extends Fragment {
                 .addSnapshotListener(new EventListener<DocumentSnapshot>() {
                     @Override
                     public void onEvent(@Nullable DocumentSnapshot document, @Nullable FirebaseFirestoreException e) {
-                        if(document.contains("Emails")) {
-                            ArrayList<String> arrayListbuffer = (ArrayList<String>) document.get("Emails");
-                            emailList.clear();
-                            emailItems.clear();
-                            for (String email : arrayListbuffer) {
-                                emailList.add(email);
-                                emailItems.add(new AlertItem(R.drawable.ic_email_black_24dp, email));
-                                Log.d(TAG, "emailList " + email);
-                                emailAdapter.notifyDataSetChanged();
-                            }
-                        }
-
                         if(document.contains("TextNums")) {
                             ArrayList<String> arrayListbuffer = (ArrayList<String>) document.get("TextNums");
                             phnNumList.clear();
@@ -162,55 +120,6 @@ public class AlertFragment extends Fragment {
                     }
                 });
         return view;
-    }
-
-    private void ShowPopupEmail(final String Email){
-        TextView alertInfo;
-        Button testAlert;
-        Button deleteInfo;
-        Button cancel;
-
-        alertDialog.setContentView(R.layout.layout_alert);
-        alertInfo = alertDialog.findViewById(R.id.alertInfo);
-        testAlert = alertDialog.findViewById(R.id.alertDialogTestBtn);
-        deleteInfo = alertDialog.findViewById(R.id.alertDialogDeleteBtn);
-        cancel = alertDialog.findViewById(R.id.alertDialogCancelBtn);
-
-        alertInfo.setText(Email);
-
-        testAlert.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Map<String, Object> data = new HashMap<>();
-                data.put("type", "Email");
-                data.put("email", Email);
-                Log.d("Calling", "Function");
-                mFunctions.getHttpsCallable("testAlarms").call(data);
-            }
-        });
-
-        deleteInfo.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                int pos = emailList.indexOf(Email);
-                emailList.remove(Email);
-                emailItems.remove(pos);
-                db.collection("alerts").document(user.getUid()).update("Emails", emailList);
-                emailAdapter.notifyDataSetChanged();
-                alertDialog.dismiss();
-
-            }
-        });
-
-        cancel.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View view) {
-                alertDialog.dismiss();
-            }
-        });
-
-        alertDialog.show();
-
     }
 
 
@@ -260,46 +169,6 @@ public class AlertFragment extends Fragment {
 
         alertDialog.show();
 
-    }
-
-    private void ShowAddEmail(View v){
-        Button add;
-        Button cancel;
-        final EditText emailET;
-
-        alertAddEmail.setContentView(R.layout.layout_alert_add_email);
-        add = alertAddEmail.findViewById(R.id.alertEmailDialogOKBtn);
-        cancel = alertAddEmail.findViewById(R.id.alertEmailDialogCancelBtn);
-        emailET = alertAddEmail.findViewById(R.id.alertEmailET);
-
-        add.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                String email = emailET.getText().toString();
-                emailList.add(email);
-                if (email.length() != 0){
-                    db.collection("alerts").document(user.getUid()).update("Emails", emailList)
-                    .addOnCompleteListener(new OnCompleteListener<Void>() {
-                        @Override
-                        public void onComplete(@NonNull Task<Void> task) {
-                            if(task.isSuccessful()){
-                                Log.d(TAG, "update successfull");
-                            }
-                        }
-                    });
-                }
-                alertAddEmail.dismiss();
-            }
-        });
-
-        cancel.setOnClickListener(new View.OnClickListener(){
-            @Override
-            public void onClick(View view) {
-                alertAddEmail.dismiss();
-            }
-        });
-
-        alertAddEmail.show();
     }
 
     private void ShowAddPhoneNumber(View v){

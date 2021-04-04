@@ -62,7 +62,7 @@ public class HomePage extends AppCompatActivity implements PurchasesUpdatedListe
     public NavController navController;
     public ImageButton navOpen;
     private FirebaseAuth mAuth;
-    private FirebaseUser user;
+    private String UID;
     private Boolean activeSubscription = false;
     private SubscriptionFragment subscriptionFragment;
     int billingResponseCode;
@@ -71,60 +71,57 @@ public class HomePage extends AppCompatActivity implements PurchasesUpdatedListe
     List<SkuDetails>SkuDetailsList;
     FirebaseFirestore db = FirebaseFirestore.getInstance();
 
+    private String base64EncodedPublicKey="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn7z1SCLXRKTgCn9U" +
+            "d99wE0N8D73LACJjUl+/2z58bfwvrqveMvdmfO7k5IOp2BghlywMAE8zDpGdbISreVyI8CRcuE/Eyn7ojz" +
+            "6YRlUVzgINP+aAwtYdeRGcxbT0oeTQzQuF6gFO6DuQM2TG14/Eg6NyqQWB+WcV+y4Gw9K+FIQtmYQTTBz7" +
+            "gtFM+2JJb6aU+FCvoQVWmU8qv68mnrSiI2CHNDUePvBlTxHUCE/VG6S6uatMVyB6CRChBjYGjI4C2ZyYds" +
+            "Ljd0hDqoUL1WN0KPAK4Q8cnq6Y0uMNhOfvax6A/t+2wsy1ov/RK5OSwqu/nbRjpHq5EP5MqFxHGXgxBwIDAQAB";
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        subscriptionFragment = new SubscriptionFragment();
         setContentView(R.layout.activity_home_page);
+        subscriptionFragment = new SubscriptionFragment();
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         navOpen = findViewById(R.id.navOpen);
         mAuth=FirebaseAuth.getInstance();
-        user = mAuth.getCurrentUser();
-        Log.d(TAG, user.getUid());
+        UID = mAuth.getCurrentUser().getUid();
+        navHostFragment = (NavHostFragment) this.getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
+        navController = navHostFragment.getNavController();
+        NavigationUI.setupWithNavController(navigationView, navController);
+        navigationView.setNavigationItemSelectedListener(this);
         navOpen.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 drawerLayout.openDrawer(GravityCompat.START);
             }
         });
-        navHostFragment = (NavHostFragment) this.getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment);
-        navController = navHostFragment.getNavController();
-        Log.d(TAG, "navController " + navController);
-        NavigationUI.setupWithNavController(navigationView, navController);
-        navigationView.setNavigationItemSelectedListener(this);
-        String base64EncodedPublicKey="MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAn7z1SCLXRKTgCn9U" +
-                "d99wE0N8D73LACJjUl+/2z58bfwvrqveMvdmfO7k5IOp2BghlywMAE8zDpGdbISreVyI8CRcuE/Eyn7ojz" +
-                "6YRlUVzgINP+aAwtYdeRGcxbT0oeTQzQuF6gFO6DuQM2TG14/Eg6NyqQWB+WcV+y4Gw9K+FIQtmYQTTBz7" +
-                "gtFM+2JJb6aU+FCvoQVWmU8qv68mnrSiI2CHNDUePvBlTxHUCE/VG6S6uatMVyB6CRChBjYGjI4C2ZyYds" +
-                "Ljd0hDqoUL1WN0KPAK4Q8cnq6Y0uMNhOfvax6A/t+2wsy1ov/RK5OSwqu/nbRjpHq5EP5MqFxHGXgxBwIDAQAB";
 
-        String UID = user.getUid();
-        DocumentReference docRef = db.collection("payments").document(UID);
+        DocumentReference docRef = db.collection("users").document(UID);
         docRef.get().addOnCompleteListener(new OnCompleteListener<DocumentSnapshot>() {
             @Override
             public void onComplete(@NonNull Task<DocumentSnapshot> task) {
-                if (task.isSuccessful()){
-                    DocumentSnapshot document = task.getResult();
-                    if(!document.exists()){
-                        Log.d(TAG, "document does not exist");
-                    }
-                    if(document.exists()) {
-                        Log.d(TAG, document.getData().toString());
-                        if (document.contains("Subscription_Active")) {
-                            activeSubscription = document.getBoolean("Subscription_Active");
-                            Log.d(TAG, "Subscription_Active found");
-                            if (!activeSubscription) {
-                                Log.d(TAG, "Setting up Setup Client");
-                                setupBillingClient();
-                            }
+            if (task.isSuccessful()){
+                DocumentSnapshot document = task.getResult();
+                if(!document.exists()){
+                    Log.d(TAG, "document does not exist");
+                }
+                if(document.exists()) {
+                    Log.d(TAG, document.getData().toString());
+                    if (document.contains("Subscribed")) {
+                        activeSubscription = document.getBoolean("Subscribed");
+                        Log.d(TAG, "Subscribed found");
+                        if (!activeSubscription) {
+                            Log.d(TAG, "Setting up Setup Client");
+                            setupBillingClient();
                         }
                     }
-
-                }else{
-                    Log.d(TAG, "get sub active failed with ", task.getException());
                 }
 
+            }else{
+                Log.d(TAG, "get sub active failed with ", task.getException());
+            }
             }
 
         });
@@ -244,9 +241,9 @@ public class HomePage extends AppCompatActivity implements PurchasesUpdatedListe
             String Time = expirationTime.toString();
 
             Map<String, Object> paidInfo = new HashMap<>();
-            paidInfo.put("Subscription_Active", true);
+            paidInfo.put("Subscribed", true);
             paidInfo.put("Expiration_Time", Time);
-            db.collection("payments").document(user.getUid()).set(paidInfo, SetOptions.merge())
+            db.collection("users").document(UID).set(paidInfo, SetOptions.merge())
                     .addOnSuccessListener(new OnSuccessListener<Void>() {
                         @Override
                         public void onSuccess(Void aVoid) {
